@@ -13,6 +13,10 @@ app_register:
     path: /register
     controller: App\Controller\RegistrationController::register
 
+app_register_post:
+    path: /register/save
+    controller: App\Controller\RegistrationController::post
+
 app_home:
     path: /
     controller: App\Controller\HomeController::home

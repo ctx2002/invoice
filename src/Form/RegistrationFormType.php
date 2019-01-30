@@ -10,11 +10,20 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\Length;
 
+/**
+ * Class RegistrationFormType
+ * @package App\Form
+ */
 class RegistrationFormType extends AbstractType
 {
+    /**
+     * @param FormBuilderInterface $builder
+     * @param array $options
+     */
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder
+            ->setAction($options['action'])
             ->add('email')
             ->add('plainPassword', PasswordType::class, [
                 // instead of being set onto the object directly,
@@ -35,6 +44,9 @@ class RegistrationFormType extends AbstractType
         ;
     }
 
+    /**
+     * @param OptionsResolver $resolver
+     */
     public function configureOptions(OptionsResolver $resolver)
     {
         $resolver->setDefaults([

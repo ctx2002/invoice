@@ -11,12 +11,27 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 use Symfony\Component\Security\Guard\GuardAuthenticatorHandler;
 use Symfony\Component\Security\Core\Security;
+use App\Handler\Registration;
+use App\Exception\InvalidFormException;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Psr\Log\LoggerInterface;
 
+/**
+ * Class RegistrationController
+ * @package App\Controller
+ */
 class RegistrationController extends AbstractController
 {
 
+    /**
+     * @var Security
+     */
     protected $security;
 
+    /**
+     * RegistrationController constructor.
+     * @param Security $security
+     */
     public function __construct(Security $security)
     {
         // Avoid calling getUser() in the constructor: auth may not
@@ -25,6 +40,13 @@ class RegistrationController extends AbstractController
     }
 
 
+    /**
+     * @param Request $request
+     * @param UserPasswordEncoderInterface $passwordEncoder
+     * @param GuardAuthenticatorHandler $guardHandler
+     * @param LoginFormAuthenticator $authenticator
+     * @return Response
+     */
     public function register(Request $request, UserPasswordEncoderInterface $passwordEncoder, GuardAuthenticatorHandler $guardHandler, LoginFormAuthenticator $authenticator): Response
     {
         if ($this->security->getUser()) {
@@ -32,34 +54,31 @@ class RegistrationController extends AbstractController
         }
 
         $user = new User();
-        $form = $this->createForm(RegistrationFormType::class, $user);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            // encode the plain password
-            $user->setPassword(
-                $passwordEncoder->encodePassword(
-                    $user,
-                    $form->get('plainPassword')->getData()
-                )
-            );
-
-            $entityManager = $this->getDoctrine()->getManager();
-            $entityManager->persist($user);
-            $entityManager->flush();
-
-            // do anything else you need here, like send an email
-
-            return $guardHandler->authenticateUserAndHandleSuccess(
-                $user,
-                $request,
-                $authenticator,
-                'main' // firewall name in security.yaml
-            );
-        }
+        $form = $this->createForm(RegistrationFormType::class, $user,
+            ['action' => $this->generateUrl('app_register_post')]);
 
         return $this->render('registration/register.html.twig', [
             'registrationForm' => $form->createView(),
         ]);
+    }
+
+    /**
+     * @param Request $request
+     * @param Registration $service
+     * @param LoggerInterface $logger
+     * @return Response
+     * @throws \Exception
+     */
+    public function post(Request $request, Registration $service, LoggerInterface $logger): Response
+    {
+        try {
+            return $service->post($request);
+        } catch (InvalidFormException $e) {
+            $logger->error($e->getTraceAsString());
+            return new RedirectResponse($this->redirectToRoute('app_register'));
+        } catch (\Exception $e) {
+            $logger->error($e->getTraceAsString());
+            throw $e;
+        }
     }
 }
