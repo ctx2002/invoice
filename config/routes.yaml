@@ -20,3 +20,7 @@ app_register_post:
 app_home:
     path: /
     controller: App\Controller\HomeController::home
+
+app_healthcheck:
+    path: /ping
+    controller: App\Controller\HealthCheckController::index
